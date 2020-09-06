@@ -1,0 +1,111 @@
+'''
+    The goal of this project is to analyze student test scores.
+    You can choose any particular school in the dataset (perhaps one you went to, a
+    family member goes to now, or has gone to).
+    The analysis is open to you – however, you should present some interesting
+    insights into your school of choice – such as student population demographics,
+    test scores (algebra, living environment, etc).
+    Your chosen school should be compared to the entire city (entire dataset).
+    For example, your schools living environment scores vs. citywide.
+    Your project should include some descriptive statistics, and at least 3 visuals.
+    You must also write a description describing your content – if you plot a
+    histogram of test scores, you should describe what the graph is showing.
+    Have fun! You may use google and stackoverflow to help you.
+'''
+
+''' Import packages'''
+from matplotlib.gridspec import GridSpec
+import pandas as pd
+import matplotlib.pyplot as plt
+
+''' Pandas setup options'''
+pd.set_option('display.max_rows', None)
+pd.set_option('display.max_columns', None)
+pd.set_option('display.width', None)
+
+''' Data import'''
+url = 'https://raw.githubusercontent.com/CunyLaguardiaDataAnalytics/datasets/master/2014-15_To_2016-17_School' \
+      '-_Level_NYC_Regents_Report_For_All_Variables.csv '
+url1 = r'c:\data science\2014-15_To_2016-17_School-_Level_NYC_Regents_Report_For_All_Variables.csv'
+
+''' Read csv and replace missing values'''
+missing_values = ['s', 'na']
+df = pd.read_csv(url1, na_values=missing_values)
+
+''' Data cleansing:
+        1: Dropping columns that have no added value to the stats: School Name.
+        2. Replacing values where needed, method chosen is median '''
+col_to_drop = ['School Level']
+df.drop(col_to_drop, axis=1, inplace=True)
+[df.drop(col, axis=1, inplace=True) for col in df if col.startswith('Percent')]
+
+''' Conversion of string values to numeric and assigning median to NaN values'''
+no_conversion = ['School DBN', 'School Name', 'Regents Exam', 'Year']
+for col in df.columns:
+    if col not in no_conversion:
+        df[col] = pd.to_numeric(df[col])
+        median = df[col].median()
+        df[col].fillna(median, inplace=True)
+df_school = df[df['School DBN'] == '04M610']
+
+''' Some basic stats '''
+print('------------------- Basic All Schools and Selected School Stats ----------------------------')
+print('Years exams were taken in: ' + str(df['Year'].unique()))
+print('Number of exams taken: ' + str(df['Regents Exam'].nunique()))
+print('Number of students taking exams thru all years is: ' + str(df['Year'].count()))
+print('Number of students taking exams by year: \n' + str(df.groupby(['Year'])['Year'].count()))
+print('Mean score by year: \n' + str(df.groupby('Year')['Mean Score'].mean()))
+print('Number of exams taken in selected school: ' + str(df_school['Regents Exam'].nunique()))
+print('Number of students taking exams in selected school thru all years is : ' + str(df_school['Year'].count()))
+print('Number of students taking exams in selected school by year: \n' + str(df_school.groupby('Year')['Total Tested'].count()))
+print('Mean score by year in selected school: \n' + str(df_school.groupby('Year')['Mean Score'].mean()))
+
+''' Comparison of Selected School Average in 3 years against All Schools '''
+df_comp = pd.DataFrame()
+df_comp['School Mean by Year'] = df_school.groupby('Year')['Mean Score'].mean()
+df_comp['Total Mean by Year'] = df.groupby('Year')['Mean Score'].mean()
+df_comp['School Students'] = df_school['Year'].value_counts()
+df_comp['Students'] = df['Year'].value_counts()
+df_comp['School students %'] = (df_school['Year'].value_counts() / df['Year'].value_counts()) * 100
+print('\n\n---- Comparison of selected school mean in 3 years to all (in average this school is doing better than rest) ----')
+print(df_comp)
+
+''' All schools stats by year '''
+df_stats_by_year = pd.DataFrame()
+for year in df['Year'].unique():
+    for col in df[df['Year'] == year]:
+        if col not in no_conversion:
+            df_stats_by_year[str(year) + ' ' + col] = df[col].describe()
+print('\n\n------------------- All schools stats by year ----------------------------')
+print(df_stats_by_year)
+
+''' Specifying values for the plot '''
+unique_exam = df_school['Regents Exam'].unique()
+exam_mean = df_school.groupby('Regents Exam')['Mean Score'].mean()
+tested_exam = df.groupby('Regents Exam')['Total Tested'].sum()
+unique_year = df['Year'].unique()
+exam_year = df.groupby('Year')['Total Tested'].sum()
+
+''' Create figure and subplots'''
+fig = plt.figure(constrained_layout=True,  figsize=(15,15))
+gs = GridSpec(2, 2, figure=fig)
+ax1 = fig.add_subplot(gs[0, :])
+ax2 = fig.add_subplot(gs[1, :-1])
+ax3 = fig.add_subplot(gs[1:, -1])
+
+ax1.title.set_text('Mean 3 Year Score by Exam')
+ax1.set_xlabel('Exam', fontweight='bold')
+ax1.set_ylabel('score', fontweight='bold')
+ax1.bar(unique_exam, exam_mean)
+ax1.set_xticklabels(unique_exam, rotation=45, ha='right')
+
+ax2.pie(tested_exam, labels=unique_exam, autopct='%1.1f%%', shadow=True, startangle=90)
+ax2.title.set_text("Percent Tests by Exam")
+
+ax3.title.set_text('Tests by Year')
+ax3.set_xlabel('Year', fontweight='bold')
+ax3.set_ylabel('Tests', fontweight='bold')
+ax3.set_xticks(unique_year)
+ax3.bar(unique_year, exam_year)
+
+plt.show()
