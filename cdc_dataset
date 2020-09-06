@@ -1,0 +1,107 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
+import numpy as np
+
+
+pd.set_option('display.max_rows', 500)
+pd.set_option('display.max_columns', 100)
+pd.set_option('display.width', 1000)
+
+font = {'family': 'serif',
+        'color':  'red',
+        'weight': 'normal',
+        'size': 16,
+        }
+
+
+''' 
+    investigation of data reveals it is grouped by year and ethnicity.
+    Focus is on: 'Invasive cancer of the oral cavity or pharynx, incidence', Question ID: 'CAN4_1'
+    start year selected: 2012 to 2016 (4 years)
+    Analysis made on location and ethnicity in NY, CA and US .
+    Only some columns were read.
+    For simplicity, columns header were re-named.
+'''
+
+header_list = ['YearStart', 'LocationAbbr', 'Question', 'DataValueType', 'DataValue', 'Stratification1', 'QuestionID', 'StratificationID1']
+new_header_list = ['Year', 'State', 'Disease', 'Type', 'Occur', 'EthnicGroup', 'ID', 'Ethnicity']
+url = r'c:\data science\U.S._Chronic_Disease_Indicators__CDI.csv'
+df = pd.read_csv(url, usecols=header_list)
+df.columns = new_header_list
+df = df[(df['ID'] == 'CAN4_1') & (df['Year'] == 2012) & (df['Type'] == 'Average Annual Age-adjusted Rate')]
+
+'''
+    Remove unnecessary columns. The values will be displayed in title
+    and split df by state.
+    Change Value to float.
+'''
+df['Occur'].fillna(df['Occur'].median(), inplace=True)
+df.drop(columns=['Year', 'Disease', 'Type', 'ID'], inplace=True)
+df['Occur'] = df['Occur'].astype(float)
+df_NY = df[df['State'] == 'NY']
+df_CA = df[df['State'] == 'CA']
+df_US = df[df['State'] == 'US']
+
+''' Compare Stats'''
+df_NY_CA_comp = pd.merge(df_NY[['Ethnicity', 'Occur']], df_CA[['Ethnicity', 'Occur']], how='inner', on=['Ethnicity'])
+df_NY_CA_US_comp = pd.merge(df_NY_CA_comp, df_US[['Ethnicity', 'Occur']], how='inner', on=['Ethnicity'])
+df_NY_CA_US_comp.columns = ['Ethnicity', 'NY', 'CA', 'US']
+print('--------------- Ethnicity by state comparison --------------')
+print(df_NY_CA_US_comp)
+
+''' Assign Variables '''
+ethnicity_labels = [item for item in df_US['Ethnicity']]
+ny_ethnicity_count = [count for count in df_NY['Occur']]
+ca_ethnicity_count = [count for count in df_CA['Occur']]
+us_ethnicity_count = [count for count in df_US['Occur']]
+ax4labels = np.arange(len(ethnicity_labels))  # the label locations
+width = .25  # the width of the bars
+
+''' Creating figure '''
+fig = plt.figure(constrained_layout=False,  figsize=(15, 15))
+fig.suptitle('Invasive cancer incidence Between 2012 and 2016 \nAverage Annual Age-adjusted Rate', fontdict=font)
+plt.subplots_adjust(hspace=.5)
+gs = GridSpec(2, 3, figure=fig)
+
+''' Plot 1: Count by State '''
+state = df['State'].unique()
+state_occur = df.groupby('State')['Occur'].sum()
+ax1 = fig.add_subplot(gs[0, :])
+ax1.set_title('US All Ethnicities Counts by State', color='green')
+ax1.bar(state, state_occur)
+ax1.set_ylabel('Occur per 100,000', fontweight='bold')
+ax1.set_xlabel('State', fontweight='bold')
+ax1.set_xticklabels(labels=state, rotation=45)
+
+''' Plot 2: NY by Ethnicity '''
+ny_ethnicity = df_NY['Ethnicity']
+ny_occur = df_NY['Occur']
+ax2 = fig.add_subplot(gs[1, :-2])
+ax2.set_ylabel('Occur per 100,000', fontweight='bold')
+ax2.set_xlabel('Ethnicity', fontweight='bold')
+ax2.set_title('New York by Ethnic Group', color='green')
+ax2.bar(ny_ethnicity, ny_occur)
+ax2.set_xticklabels(labels=ny_ethnicity)
+
+''' Plot 3: Ethnicity percent in the US '''
+us_ethnicity = df_US['Ethnicity']
+us_occur = df_US['Occur']
+ax3 = fig.add_subplot(gs[1, -2:-1])
+ax3.set_title('US Percent by Ethnicity', color='green')
+ax3.pie(us_occur, labels=us_ethnicity, autopct='%1.1f%%', shadow=True, startangle=90)
+
+''' Plot 4: Compare count of white in NY vs CA vs US'''
+ax4 = fig.add_subplot(gs[1:, -1])
+ax4.set_title('NY vs CA vs US', color='green')
+ax4.set_ylabel('Occur per 100,000', fontweight='bold')
+ax4.set_xlabel('Ethnicity', fontweight='bold')
+ax4.bar(ax4labels - width/2, ny_ethnicity_count, width, label='New York')
+ax4.bar(ax4labels + width/2, ca_ethnicity_count, width, label='California')
+ax4.bar(ax4labels + 1.5 * width, us_ethnicity_count, width, label='US')
+ax4.set_xticklabels(labels=ny_ethnicity)
+ax4.set_xticks(ax4labels)
+handles, labels = ax4.get_legend_handles_labels()
+fig.legend(handles, labels, bbox_to_anchor=(1, 0.35))
+
+plt.show()
