@@ -56,7 +56,7 @@ four_to_24_hour = df[(df['Time To Close'] >= 4) & (df['Time To Close'] < 24)]['o
 over_24_hour = df[df['Time To Close'] >= 24]['occur'].count()
 time_to_close_lbl = ['Under 1 Hour', '1 to 4 Hours', '4 to 24 Hours', 'over 24 Hours']
 time_to_close = [under_hour, one_to_4_hour, four_to_24_hour, over_24_hour]
-print(df['Time To Close'])
+print(df['Time To Close'].head())
 print('------')
 
 # --------------------------------------------------------------------------------------------
