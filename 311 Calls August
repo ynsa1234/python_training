@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 import numpy as np
-
+# %matplotlib inline
 '''
     311 Analysis for the July & August 2020
     Several issues presented themselves as we were working on the project
@@ -15,13 +15,6 @@ import numpy as np
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
 pd.set_option('display.width', None)
-
-# Creating font family to be later used in graphs
-font = {'family': 'serif',
-        'color': 'red',
-        'weight': 'normal',
-        'size': 20,
-        }
 
 # ----------------------------------------------------------------------------------------------------
 # Read a few columns of the dataset, ones that analysis is performed on
@@ -88,6 +81,7 @@ df_borough_comp = pd.merge(df_borough_comp, df_bq_complaint, how='inner', on=['C
 df_borough_comp = pd.merge(df_borough_comp, df_si_complaint, how='inner', on=['Complaint Type'])
 df_borough_comp.columns = ['Manhattan', 'Queens', 'Bronx', 'Brooklyn', 'Staten Island']
 df_borough_comp = df_borough_comp.nlargest(5, 'Manhattan')
+df_borough_comp.index = df_borough_comp.index.str.replace('NonCompliance with ', '')
 print(df_borough_comp)
 print('------')
 
@@ -99,46 +93,53 @@ brooklyn_count = [count for count in df_borough_comp['Brooklyn']]
 staten_island_count = [count for count in df_borough_comp['Staten Island']]
 
 # ----------------------------------------------------------------------------------------------------
-# Function to add numbers on top of bars
-def ChartLabel(chart, ax):
-    for bar in chart:  # Adding number in bars
+# Function to add numbers in bars
+def chartlabel(chart, ax):
+    for bar in chart:
         height = bar.get_height()
         ax.text(bar.get_x() + bar.get_width() / 2, .5 * height,
                 '%d' % int(height), rotation=90, ha='center')
 
 # ----------------------------------------------------------------------------------------------------
+# Creating font family to be later used in graphs
+font = {'family': 'serif',
+        'color': 'red',
+        'weight': 'normal',
+        'size': 20,
+        }
+
 # Creating figure
 fig = plt.figure(constrained_layout=False, figsize=(15, 15))
 fig.suptitle('311 Complaints August 2020', fontdict=font)
-plt.subplots_adjust(hspace=.5, wspace=1)
-gs = GridSpec(3, 6, figure=fig)
+plt.subplots_adjust(hspace=1.5, wspace=1)
+gs = GridSpec(5, 6, figure=fig)
 
 # Complaints by Day
-ax1 = fig.add_subplot(gs[0, :])
+ax1 = fig.add_subplot(gs[0: 2, :])
 ax1.set_title('Complaints by Day - August', color='green')
 chart1 = ax1.bar(complaints_by_day.index, complaints_by_day)
 ax1.set_ylabel('Complaints Count', fontweight='bold')
 ax1.set_xlabel('Day', fontweight='bold')
-ChartLabel(chart1, ax1)
+chartlabel(chart1, ax1)
 
 # Complaint by Time To Close
-ax2 = fig.add_subplot(gs[1: ,-6: -4])
+ax2 = fig.add_subplot(gs[2:, -6: -4])
 ax2.set_title('Time to Close', color='green')
 ax2.pie(time_to_close, autopct='%1.1f%%', shadow=True, startangle=45)
-ax2.legend(time_to_close_lbl, loc=2, prop={'size': 5})
+ax2.legend(time_to_close_lbl, loc=2, prop={'size': 7})
 
 # Complaint by Status
-ax3 = fig.add_subplot(gs[1: , -4: -2])
+ax3 = fig.add_subplot(gs[2:, -4: -2])
 ax3.set_title('Complaint by Status', color='green')
 ax3.set_ylabel('Complaint Count', fontweight='bold')
 ax3.set_xlabel('Status', fontweight='bold')
 ax3.set_xticklabels(status_count.index, rotation=45)
 chart3 = ax3.bar(status_count.index, status_count)
-ChartLabel(chart3, ax3)
+chartlabel(chart3, ax3)
 
 # Top 5 complaints by borough
-ax4 = fig.add_subplot(gs[1: , -2: ])
-ax1labels = np.arange(len(df_borough_comp.columns))
+ax4 = fig.add_subplot(gs[2: -1, -2:])
+ax1labels = np.arange(len(df_borough_comp.index))
 
 width = .2
 
@@ -146,15 +147,16 @@ ax4.set_title('Top 5 complaints by borough', color='green')
 ax4.set_ylabel('Complaint Count', fontweight='bold')
 ax4.set_xlabel('Borough', fontweight='bold')
 ax4.set_xticks(ax1labels)
-ax4.set_xticklabels(df_borough_comp.columns, rotation=45)
-ax4charts = [ ax4.bar(ax1labels - width / 2, mnhtn_count, width, label=df_borough_comp.index[0]),
-              ax4.bar(ax1labels + width / 2, queens_count, width, label=df_borough_comp.index[1]),
-              ax4.bar(ax1labels + 1.5 * width, bronx_count, width, label=df_borough_comp.index[2]),
-              ax4.bar(ax1labels + 2.5 * width, brooklyn_count, width, label=df_borough_comp.index[3]),
-              ax4.bar(ax1labels + 3.5 * width, staten_island_count, width, label=df_borough_comp.index[4])]
-for chart in ax4charts:
-    ChartLabel(chart, ax4)
+ax4.set_xticklabels(df_borough_comp.index, rotation=90)
 
-ax4.legend(loc=1, prop={'size': 6})
+ax4charts = [ax4.bar(ax1labels - width / 2, mnhtn_count, width, label=df_borough_comp.columns[0]),
+             ax4.bar(ax1labels + width / 2, queens_count, width, label=df_borough_comp.columns[1]),
+             ax4.bar(ax1labels + 1.5 * width, bronx_count, width, label=df_borough_comp.columns[2]),
+             ax4.bar(ax1labels + 2.5 * width, brooklyn_count, width, label=df_borough_comp.columns[3]),
+             ax4.bar(ax1labels + 3.5 * width, staten_island_count, width, label=df_borough_comp.columns[4])]
+for chart in ax4charts:
+    chartlabel(chart, ax4)
+
+ax4.legend(loc=1, prop={'size': 8})
 
 plt.show()
