@@ -19,7 +19,7 @@ pd.set_option('display.width', None)
 # ----------------------------------------------------------------------------------------------------
 # Read a few columns of the dataset, ones that analysis is performed on
 url = r'C:\Data Science\311_Service_Requests_from_2010_to_Present.csv'
-col_header = ['Created Date', 'Closed Date', 'Complaint Type', 'Descriptor', 'City', 'Status', 'Borough']
+col_header = ['Created Date', 'Closed Date', 'Complaint Type', 'Status', 'Borough']
 df = pd.read_csv(url, usecols=col_header)
 # Adding count helper column. Code could work w/o this data but it was meant to simplify reading
 df['occur'] = 1
