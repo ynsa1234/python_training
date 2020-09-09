@@ -92,7 +92,7 @@ queens_count = [count for count in df_borough_comp[df_top_complaints.index[1]]]
 bronx_count = [count for count in df_borough_comp[df_top_complaints.index[2]]]
 brooklyn_count = [count for count in df_borough_comp[df_top_complaints.index[3]]]
 staten_island_count = [count for count in df_borough_comp[df_top_complaints.index[4]]]
-print(mnhtn_count, queens_count, bronx_count)
+
 # ----------------------------------------------------------------------------------------------------
 # Function to add numbers in bars
 def chartlabel(chart, ax):
